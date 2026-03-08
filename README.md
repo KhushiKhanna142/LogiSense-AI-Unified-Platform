@@ -18,6 +18,19 @@ The LogiSense Unified Platform operates via a synchronized Next.js frontend and 
 | **F9 Blockchain** | Auditable Logistics Ledger & Decision Immutability | Polygon-compatible Web3.py, Merkle Trees |
 | **F10 Synthesis** | Decentralized Agentic Control Loop | LangGraph, Chat LLM State |
 
+## ✨ Core Features (F1-F10)
+
+1. **Feature 1 (Observer Agent):** A real-time monitoring agent that ingests a continuous stream of shipments via a WebSocket and detects anomalies (e.g., delays, route deviations) using an Isolation Forest anomaly detection model.
+2. **Feature 2 (Reasoner Agent):** A cascade-analysis agent that evaluates how one delayed shipment impacts dependent shipments down the supply chain. It builds a Directed Acyclic Graph (DAG) and propagates delays to calculate multi-tier contagion risk.
+3. **Feature 3 (Actor Agent):** An autonomous execution agent that acts on the Reasoner’s findings. It performs real-time carrier substitutions and subbing by evaluating alternative carriers based on cost, reliability, and SLA metrics. 
+4. **Feature 4 (Warehouse Load & Intake Staggering):** Monitors warehouse congestion using ARIMA models to forecast intake loads. If a warehouse is over capacity, it delays or redirects incoming shipments to balance utilization, visualized via a live heatmap.
+5. **Feature 5 (Machine Learning Predictive Models):** The foundation of predictive analytics inside LogiSense, training models on historical logistics data to predict exact congestion levels, ETA delays, and RTO probabilities.
+6. **Feature 6 (ZenDec / ZenRTO):** The Zen Platform Decision Engine. Uses TOPSIS to rank and assign the best carrier routes while cross-referencing AQI data to minimize carbon impact. Also calculates the probability of Return-to-Origin (RTO) fraud using LightGBM.
+7. **Feature 7 (ZenETA):** Advanced ETA Prediction. Utilizes XGBoost quantile regression to predict highly accurate delivery ETAs at the 50th, 90th, and 99th percentiles, ensuring tight SLA compliance.
+8. **Feature 8 (ML Explainability):** Provides complete transparency into AI decisions using SHAP (SHapley Additive exPlanations). Generates interactive Heatmaps, Risk Matrices, and Waterfall charts so operators understand *why* a decision was made.
+9. **Feature 9 (Blockchain Audit Ledger):** Anchors critical autonomous routing decisions onto a Polygon-compatible blockchain. Creates immutable, cryptographically verifiable Merkle tree logs for every action taken by the AI.
+10. **Feature 10 (Agentic Synthesis):** A unified orchestration layer built on LangGraph. It links all disparate models and agents (Observer, Reasoner, Actor, Zen Platform, Explainability, and Blockchain) into a cohesive, decentralized state graph capable of complex multi-step reasoning.
+
 ## 🏗️ Repository Structure
 
 ```
