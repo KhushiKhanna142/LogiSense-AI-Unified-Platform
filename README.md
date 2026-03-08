@@ -1,162 +1,81 @@
-# LogiSense AI 🚢
+# LogiSense AI Unified Platform 🚀
 
-> **Cyber Cypher 5.0 · Advanced Track**  
-> A real-time multi-agent AI system for predictive logistics and supply chain disruption management.
+**An End-to-End AI Logistics OS combining Predictive Analytics (F1-F4), the Zen Platform (ZenDec, ZenRTO, ZenETA), and Advanced LangGraph Intelligence (F8-F10).**
 
----
+## 🌐 Platform Architecture
 
-## Features
+The LogiSense Unified Platform operates via a synchronized Next.js frontend and a monolithic FastAPI backend serving multiple intelligent sub-agents that communicate over Redis and LangGraph.
 
-### F1 — Anomaly Detection (Observer Agent)
-The Observer Agent polls every active shipment every 5 minutes from Supabase, applying 4 rule-based checks and an Isolation Forest model to flag anomalies:
+| Module | Core Functionality | AI / ML Tech Stack |
+|--------|--------------------|--------------------|
+| **Observer (F1/F4)** | Real-time Anomaly Detection & Warehouse Load Polling | Isolation Forest, ARIMA(1,1,1) |
+| **Reasoner (F2)** | Supply Chain Contagion Risk Analysis & Cascade Trees | Directed Acyclic Graph (DAG) BFS, LightGBM |
+| **Actor (F3/F4)** | Autonomous Carrier Subbing, Rerouting & Intake Staggering | Kolmogorov–Smirnov Drift, Heuristics |
+| **ZenDec (F6)** | Route & Carrier Decision Engine | TOPSIS optimization, AQI APIs, LLM Stress Test |
+| **ZenRTO (F6)** | RTO Fraud Detection & Risk Scoring | LightGBM, SHAP, Twilio Connect |
+| **ZenETA (F7)** | ETA Quantile Pediction | XGBoost (p50/p90/p99) |
+| **F8 Explainability** | Actionable Transparency & Counterfactual Reasoning | SHAP Heatmaps, Risk Matrices, Plotly JS |
+| **F9 Blockchain** | Auditable Logistics Ledger & Decision Immutability | Polygon-compatible Web3.py, Merkle Trees |
+| **F10 Synthesis** | Decentralized Agentic Control Loop | LangGraph, Chat LLM State |
 
-| Rule | Trigger | Severity |
-|---|---|---|
-| ETA Drift | `eta_current > eta_original × 1.2` | HIGH |
-| Carrier Silence | No check-in in past 20 min | CRITICAL |
-| Status Stall | Status unchanged for >6 hrs | MEDIUM |
-| Warehouse Load | Warehouse >85% capacity | HIGH |
-
-Anomalies are published to a **Redis Stream** (`reasoner_queue`) and broadcast live to the dashboard via **WebSocket**.
-
----
-
-### F2 — Cascade Risk Tree (Reasoner Agent)
-The Reasoner Agent subscribes to anomaly events and runs BFS on a pre-loaded directed dependency graph of 1000 shipments:
-
-- **BFS traversal** finds all downstream shipments at risk from a single failure
-- **LightGBM scoring** rates each node's delay probability using ETA, carrier reliability, and warehouse load
-- Publishes a **CascadeTree** (nodes + edges) to the dashboard as a D3 force-directed graph
-- Trees with **20–40 nodes** are common when a critical carrier fails
-
----
-
-### F3 — Carrier Swap (Actor Agent)
-The Actor Agent monitors for repeated low-reliability carriers using a **Kolmogorov–Smirnov drift test** on historical on-time rates:
-
-- KS stat > 0.7 and p-value < 0.05 → carrier flagged
-- Best replacement selected by highest reliability score from non-blacklisted carriers
-- All affected `IN_TRANSIT` shipments reassigned in Supabase
-- Decision logged with **SHA-256 fingerprint** for F9 blockchain audit
-- Swap event broadcast live to dashboard swap log
-
----
-
-### F4 — Warehouse Congestion Predictor (Observer + Actor)
-Three-tier warehouse monitoring system with automatic rerouting:
-
-| Trigger | Condition | Action |
-|---|---|---|
-| Load Threshold | `current_load_pct >= 85%` | REDIRECT → lowest-load alternate |
-| Throughput Drop | >20% drop vs 15-min rolling avg | STAGGER intake by 15 min batches |
-| ARIMA Pre-emptive | forecast hits 85% within 2 hrs | Pre-emptive stagger at 70% load |
-
-- Observer syncs warehouse loads from Supabase → Redis every poll cycle
-- **Leaflet map** shows all 4 warehouse nodes (Mumbai, Delhi, Bangalore, Pune) colour-coded by load
-- WH-02 turns red and redirects shipments to WH-04 during the demo
-
----
-
-## Project Structure
+## 🏗️ Repository Structure
 
 ```
 LogiSense/
 ├── backend/
-│   ├── agents/
-│   │   ├── observer/          # F1 anomaly detection + F4 warehouse monitor
-│   │   │   └── warehouse/     # monitor.py, forecaster.py, publisher.py
-│   │   ├── reasoner/          # F2 BFS cascade tree + LightGBM scoring
-│   │   └── actor/             # F3 carrier swap + F4 redirect/stagger tools
-│   ├── api/
-│   │   ├── main.py            # FastAPI app + WebSocket + REST endpoints
-│   │   └── websocket.py       # WebSocket connection manager
-│   ├── db/
-│   │   └── supabase_client.py # All Supabase query functions
-│   ├── streams/
-│   │   └── redis_client.py    # Redis Streams + cache helpers
-│   ├── scripts/
-│   │   ├── demo_seed.py       # Full F1→F4 demo data injector
-│   │   ├── generate_dag.py    # Shipment dependency graph seeder
-│   │   └── generate_warehouses.py
-│   └── requirements.txt
+│   ├── agents/            # Legacy F1-F4 Agents (Observer, Reasoner, Actor)
+│   ├── api/               # Unified FastAPI App (main.py router)
+│   ├── features/          # New Intelligence Models
+│   │   ├── explainability/ # F8 SHAP Heatmaps
+│   │   ├── blockchain/     # F9 Auditing
+│   │   └── synthesis/      # F10 LangGraph
+│   ├── zen/               # The Zen Platform
+│   │   ├── core/          # TOPSIS & Autonomy pipelines
+│   │   ├── routers/       # Demand, ETA, RTO modular routers
+│   │   └── services/      # Gemini, AQI, Waybills
+│   ├── db/                # Supabase ORM layer
+│   └── streams/           # Redis real-time Pub/Sub
+│
 └── frontend/
-    └── src/components/
-        ├── AnomalyBadge.jsx   # F1 live anomaly feed
-        ├── CascadeTree.jsx    # F2 D3 force-directed graph
-        ├── SwapNotification.jsx  # F3 carrier swap log
-        └── WarehouseHeatmap.jsx  # F4 Leaflet map
+    └── src/
+        ├── App.jsx        # Unified Tabbed Dashboard Router
+        ├── components/
+        │   ├── features/  # F8 SHAP Plotly Components
+        │   ├── zen/       # IFrames and React Components for Zen
+        │   └── ...        # Legacy React Components (Warehouse Map, Anomaly Badge)
 ```
 
----
+## 🚀 Quick Start Guide
 
-## Quick Start
+### 1. Requirements
+Ensure you have Python 3.9+ and Node.js v18+.
 
-### 1. Clone & configure
-```bash
-git clone https://github.com/KhushiKhanna142/LogiSense.git
-cd LogiSense
-cp .env.example backend/.env   # fill in your keys
-```
+### 2. Environment Variables
+Copy `.env.example` to `backend/.env` and insert your Supabase and LLM API keys.
 
-### 2. Install backend dependencies
+### 3. Backend Setup
 ```bash
 cd backend
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Install frontend dependencies
+### 4. Start the Unified API Server
+```bash
+# Export PYTHONPATH so feature modules resolve correctly 
+PYTHONPATH=. python3 -m uvicorn api.main:app --reload --port 8000
+```
+API Documentation will be live at: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+### 5. Start the React/Vite Dashboard
+Open a second terminal window:
 ```bash
 cd frontend
 npm install
-```
-
-### 4. Seed the database
-```sql
--- Run in Supabase SQL editor:
--- backend/scripts/add_f4_tables.sql
-```
-```bash
-cd backend
-PYTHONPATH=. python3 scripts/generate_dag.py
-PYTHONPATH=. python3 scripts/generate_warehouses.py
-```
-
-### 5. Start backend
-```bash
-cd backend
-PYTHONPATH=. python3 -m uvicorn api.main:app --reload --port 8000
-```
-
-### 6. Start frontend
-```bash
-cd frontend
 npm run dev
-# → http://localhost:5173
 ```
-
-### 7. Trigger the demo
-```bash
-cd backend
-PYTHONPATH=. python3 scripts/demo_seed.py
-```
-
-Watch the dashboard: anomaly feed, cascade tree, carrier swap log, and warehouse heatmap all update within 30 seconds.
+Dashboard will be live at: [http://localhost:5173](http://localhost:5173)
 
 ---
-
-## Tech Stack
-
-| Layer | Tech |
-|---|---|
-| Backend | Python · FastAPI · Uvicorn |
-| AI/ML | Isolation Forest · LightGBM · ARIMA(1,1,1) · KS-test |
-| Database | Supabase (PostgreSQL) |
-| Cache / Streams | Redis (Redis Streams) |
-| Frontend | React · Vite · D3.js · Leaflet · TailwindCSS |
-| Scheduling | APScheduler |
-
----
-
-## Environment Variables
-
-See `.env.example` for required keys.
+*Built with React, FastAPI, LightGBM, XGBoost, and LangGraph.*

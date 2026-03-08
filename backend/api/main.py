@@ -1,13 +1,39 @@
 import asyncio
+import os
+import sys
+from pathlib import Path
 from fastapi import FastAPI, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+
+# --- Setup sys.path for unified integrations ---
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+ZEN_DIR = BACKEND_DIR / "zen"
+FEAT_DIR = BACKEND_DIR / "features"
+
+for d in [ZEN_DIR, FEAT_DIR]:
+    if str(d) not in sys.path:
+        sys.path.append(str(d))
+
 from agents.observer.agent import run_observer
 from agents.reasoner.agent import run_reasoner
 from agents.actor.agent import run_actor
 from api.websocket import ws_manager
 from db.supabase_client import get_active_shipments
 
-app = FastAPI(title='LogiSense AI', version='1.0.0')
+app = FastAPI(title='LogiSense AI Unified Platform', version='2.0.0')
+app_state = {}
+
+# --- Import integrated routers ---
+try:
+    from zen.routers import demand, routes, eta
+    from feature_8.api.routes import router as f8_router
+    from feature_9.api import router as f9_router
+    from feature_10.api.server import app as f10_app
+    from unified_graph import build_logisense_graph
+    INTEGRATIONS_LOADED = True
+except ImportError as e:
+    print(f"Warning: Integrations failed to load. {e}")
+    INTEGRATIONS_LOADED = False
 
 app.add_middleware(
     CORSMiddleware,
@@ -19,11 +45,49 @@ app.add_middleware(
 
 @app.on_event('startup')
 async def startup():
-    """Start Observer Agent when FastAPI starts."""
+    """Start Observer Agent when FastAPI starts, and initialize Zen models."""
     asyncio.create_task(run_observer())
     asyncio.create_task(run_reasoner())
     asyncio.create_task(run_actor())
     print('Observer + Reasoner + Actor Agents started.')
+    
+    if INTEGRATIONS_LOADED:
+        # Load ZenETA XGBoost
+        try:
+            from models.eta.xgboost_service import XGBoostETAService
+            xgboost_svc = XGBoostETAService(model_dir=os.path.join(ZEN_DIR, "models/eta"))
+            xgboost_svc.load_models()
+            app_state["xgboost"] = xgboost_svc
+            print("✅ XGBoost ETA model loaded")
+        except Exception as e:
+            print(f"⚠️ XGBoost load failed: {e}")
+            
+        # Mount unified routers
+        app.include_router(demand.router, prefix="/api/demand", tags=["ZenDec"])
+        app.include_router(routes.router, prefix="/api/routes", tags=["ZenRTO"])
+        app.include_router(eta.router, prefix="/api/eta", tags=["ZenETA"])
+        
+        # F8: routes.py has prefix "/api/explainability", we just mount it at root
+        app.include_router(f8_router, tags=["F8"]) 
+        
+        # Expose F8 Demo Data
+        try:
+            from feature_8.mocks.mock_ml_node import run_mock_ml_prediction
+            from feature_8.api.routes import register_model
+            state = run_mock_ml_prediction(n_children=60)
+            register_model("demo_model", state["model"])
+            app_state["f8_demo_predictions"] = state["predictions"]
+            app_state["f8_demo_features"] = state["X_df"].to_dict(orient="records")
+            print("✅ F8 Mock ML Model registered as 'demo_model'")
+        except Exception as e:
+            print(f"⚠️ F8 Mock init failed: {e}")
+        # F9: api.py
+        app.include_router(f9_router, prefix="/api/f9/blockchain", tags=["F9"])
+        # F10 is an app
+        app.mount("/api/f10", f10_app)
+        
+        print("✅ Integrated Routers Mounted.")
+
 
 
 @app.websocket('/ws/anomalies')
@@ -59,7 +123,36 @@ async def health():
     return {'status': 'ok', 'agent': 'Observer running'}
 
 
+@app.post('/api/invoke')
+async def invoke_graph(input_data: dict):
+    if not INTEGRATIONS_LOADED:
+        return {"error": "Integrations not loaded."}
+        
+    graph = build_logisense_graph()
+    state = {
+        "model": None, 
+        "X_df": None,
+        "predictions": input_data.get("predictions", []),
+        "new_decision": input_data.get("decision"),
+        "pending_decisions": [],
+        "blockchain_status": {},
+        "tamper_alerts": [],
+        "messages": [],
+        "current_node": ""
+    }
+    result = await graph.ainvoke(state)
+    return result
+
+@app.get('/api/explainability/demo_data')
+async def f8_demo_data():
+    return {
+        "predictions": app_state.get("f8_demo_predictions", []),
+        "features": app_state.get("f8_demo_features", []),
+        "modelKey": "demo_model"
+    }
+
 @app.post('/api/trigger-scan')
+
 async def trigger_scan():
     """Immediately run one full Observer + Reasoner cycle. Used by demo_seed.py."""
     import asyncio
