@@ -21,10 +21,10 @@ function App() {
         fetchExplainabilityData();
     }, []);
 
-    const renderTab = () => {
-        if (activeTab === 'LOGISENSE') {
-            return (
-                <div className="w-full max-w-4xl space-y-6">
+    const renderTabs = () => {
+        return (
+            <>
+                <div className={`w-full max-w-4xl space-y-6 ${activeTab !== 'LOGISENSE' ? 'hidden' : ''}`}>
                     {/* F2: Reasoner Agent Cascade Tree */}
                     <div className="bg-gray-800 rounded-xl shadow-2xl border border-gray-700">
                         <CascadeTree />
@@ -45,10 +45,8 @@ function App() {
                         <WarehouseHeatmap />
                     </div>
                 </div>
-            );
-        } else if (activeTab === 'EXPLAINABILITY') {
-            return (
-                <div className="w-full max-w-6xl text-white">
+
+                <div className={`w-full max-w-6xl text-white ${activeTab !== 'EXPLAINABILITY' ? 'hidden' : ''}`}>
                     {explainabilityData ? (
                         <ExplainabilityDashboard
                             predictions={explainabilityData.predictions}
@@ -60,14 +58,12 @@ function App() {
                         <div className="text-center py-20 text-gray-400">Loading ML Explanation Models...</div>
                     )}
                 </div>
-            );
-        } else if (activeTab === 'ZEN') {
-            return (
-                <div className="w-full max-w-6xl h-[800px] bg-white rounded-xl overflow-hidden shadow-2xl border border-gray-700">
+
+                <div className={`w-full max-w-6xl h-[800px] bg-white rounded-xl overflow-hidden shadow-2xl border border-gray-700 ${activeTab !== 'ZEN' ? 'hidden' : ''}`}>
                     <ZenPlatform />
                 </div>
-            );
-        }
+            </>
+        );
     };
 
     return (
@@ -99,7 +95,7 @@ function App() {
                 </button>
             </div>
 
-            {renderTab()}
+            {renderTabs()}
         </div>
     )
 }
