@@ -15,6 +15,16 @@ export default function AnomalyBadge() {
     const wsRef = useRef(null)
 
     useEffect(() => {
+        // Fetch initially active anomalies
+        fetch('http://localhost:8000/api/anomalies/active')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setEvents(data.slice(0, 50));
+                }
+            })
+            .catch(err => console.error("Error fetching active anomalies:", err));
+
         // Connect to Observer Agent WebSocket
         const ws = new WebSocket('ws://localhost:8000/ws/anomalies')
         wsRef.current = ws

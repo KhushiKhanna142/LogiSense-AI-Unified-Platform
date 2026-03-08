@@ -141,6 +141,28 @@ async def invoke_graph(input_data: dict):
     result = await graph.ainvoke(state)
     return result
 
+@app.get('/api/anomalies/active')
+async def get_active_anomalies():
+    """Return all currently active anomalies cached in Redis."""
+    from streams.redis_client import get_redis
+    import json
+    r = get_redis()
+    if not r:
+        return []
+    keys = r.keys('incident:*')
+    anomalies = []
+    for key in keys:
+        val = r.get(key)
+        if val:
+            try:
+                anomalies.append(json.loads(val))
+            except Exception:
+                pass
+    # Sort by descending severity, then timestamp
+    severity_order = {'CRITICAL': 3, 'HIGH': 2, 'MEDIUM': 1, 'LOW': 0}
+    anomalies.sort(key=lambda x: (severity_order.get(x.get('severity', 'LOW'), 0), x.get('timestamp', '')), reverse=True)
+    return anomalies
+
 @app.get('/api/explainability/demo_data')
 async def f8_demo_data():
     return {
