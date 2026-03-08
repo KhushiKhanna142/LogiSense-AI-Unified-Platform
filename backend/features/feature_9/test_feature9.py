@@ -7,7 +7,7 @@ These tests cover all core logic without requiring a live Polygon connection.
 The PolygonClient is mocked where needed.
 """
 
-from __future__ import annotations
+
 import json
 import time
 import uuid
@@ -15,7 +15,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import blockchain_tools as blockchain_tools
-import db as db
+import feature_9.db as db
 
 from blockchain_models import AnchorStatus, DecisionRecord, TierLabel
 from decision_hasher import compute_hash, fingerprint_and_sign, verify_hash, recover_signer
@@ -61,7 +61,7 @@ def make_decision(**overrides) -> DecisionRecord:
 class TestDecisionHasher:
 
     def test_hash_is_deterministic(self):
-        import db as db
+        import feature_9.db as db
         db.init_db()
         d = make_decision()
         h1 = compute_hash(d)
@@ -69,7 +69,7 @@ class TestDecisionHasher:
         assert h1 == h2
 
     def test_hash_changes_when_field_mutated(self):
-        import db as db
+        import feature_9.db as db
         db.init_db()
         d = make_decision()
         h1 = compute_hash(d)
@@ -78,7 +78,7 @@ class TestDecisionHasher:
         assert h1 != h2
 
     def test_blockchain_fields_excluded_from_hash(self):
-        import db as db
+        import feature_9.db as db
         db.init_db()
         """Blockchain-written fields must not affect the hash."""
         d = make_decision()
@@ -92,7 +92,7 @@ class TestDecisionHasher:
         assert h1 == h2, "Blockchain fields should be excluded from hash input"
 
     def test_verify_hash_passes_for_untampered(self):
-        import db as db
+        import feature_9.db as db
         db.init_db()
         d = make_decision()
         h = compute_hash(d)
@@ -100,7 +100,7 @@ class TestDecisionHasher:
         assert verify_hash(d) is True
 
     def test_verify_hash_fails_for_tampered(self):
-        import db as db
+        import feature_9.db as db
         db.init_db()
         d = make_decision()
         h = compute_hash(d)
@@ -108,7 +108,7 @@ class TestDecisionHasher:
         assert verify_hash(d) is False
 
     def test_agent_signing_and_recovery(self):
-        import db as db
+        import feature_9.db as db
         db.init_db()
         # Use a deterministic test private key (never use in prod)
         test_key = "0x" + "a" * 64
@@ -125,7 +125,7 @@ class TestDecisionHasher:
         assert recovered.lower() == expected.lower()
 
     def test_shap_values_in_hash(self):
-        import db as db
+        import feature_9.db as db
         db.init_db()
         """SHAP values must be included in hash so explanation is tamper-proof."""
         d = make_decision()
@@ -142,7 +142,7 @@ class TestDecisionHasher:
 class TestMerkleTree:
 
     def test_single_leaf(self):
-        import db as db
+        import feature_9.db as db
         db.init_db()
         hashes = ["a" * 64]
         root, levels = build_merkle_tree(hashes)
@@ -150,23 +150,23 @@ class TestMerkleTree:
         assert len(levels) == 1   # root is the leaf
 
     def test_two_leaves(self):
-        import db as db
+        import feature_9.db as db
         db.init_db()
         hashes = ["a" * 64, "b" * 64]
         root, _ = build_merkle_tree(hashes)
         assert len(root) == 64
 
     def test_odd_leaf_count_padded(self):
-        import db as db
+        import feature_9.db as db
         db.init_db()
         hashes = ["a" * 64, "b" * 64, "c" * 64]
         root, _ = build_merkle_tree(hashes)
         assert len(root) == 64
 
     def test_proof_verify_round_trip(self):
-        import db as db
+        import feature_9.db as db
         db.init_db()
-        import db as db
+        import feature_9.db as db
         db.init_db()
         hashes = [compute_hash(make_decision()) for _ in range(7)]
         root, _ = build_merkle_tree(hashes)
@@ -176,9 +176,9 @@ class TestMerkleTree:
             assert verify_proof(hashes[idx], proof, root), f"Proof failed for leaf {idx}"
 
     def test_proof_fails_for_wrong_leaf(self):
-        import db as db
+        import feature_9.db as db
         db.init_db()
-        import db as db
+        import feature_9.db as db
         db.init_db()
         hashes = [compute_hash(make_decision()) for _ in range(4)]
         root, _ = build_merkle_tree(hashes)
@@ -187,9 +187,9 @@ class TestMerkleTree:
         assert not verify_proof("f" * 4 + "0" * 60, proof, root)
 
     def test_proof_fails_for_wrong_root(self):
-        import db as db
+        import feature_9.db as db
         db.init_db()
-        import db as db
+        import feature_9.db as db
         db.init_db()
         hashes = [compute_hash(make_decision()) for _ in range(4)]
         root, _ = build_merkle_tree(hashes)
@@ -197,9 +197,9 @@ class TestMerkleTree:
         assert not verify_proof(hashes[0], proof, "f" * 4 + "0" * 60)
 
     def test_build_batch_assigns_ids(self):
-        import db as db
+        import feature_9.db as db
         db.init_db()
-        import db as db
+        import feature_9.db as db
         db.init_db()
         decisions = [make_decision() for _ in range(5)]
         for d in decisions:
@@ -218,9 +218,9 @@ class TestMerkleTree:
         assert batch.merkle_root is not None
 
     def test_attach_proofs(self):
-        import db as db
+        import feature_9.db as db
         db.init_db()
-        import db as db
+        import feature_9.db as db
         db.init_db()
         decisions = []
         for _ in range(4):
@@ -238,9 +238,9 @@ class TestMerkleTree:
             assert d.merkle_root == batch.merkle_root
 
     def test_proof_valid_after_attach(self):
-        import db as db
+        import feature_9.db as db
         db.init_db()
-        import db as db
+        import feature_9.db as db
         db.init_db()
         decisions = []
         for _ in range(6):
@@ -259,7 +259,7 @@ class TestMerkleTree:
             ), f"Proof verification failed for {d.decision_id}"
 
     def test_empty_batch_raises(self):
-        import db as db
+        import feature_9.db as db
         db.init_db()
         with pytest.raises(ValueError):
             build_batch([])
@@ -371,7 +371,7 @@ class TestIntegration:
     """
 
     def test_full_pipeline_no_chain(self):
-        import db as db
+        import feature_9.db as db
         db.init_db()
         import db
         db.init_db()

@@ -11,7 +11,7 @@ All writes are idempotent (INSERT OR REPLACE / ON CONFLICT DO UPDATE),
 so re-processing a batch or restarting mid-anchor never corrupts state.
 """
 
-from __future__ import annotations
+
 
 import json
 import logging

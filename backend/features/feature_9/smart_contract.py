@@ -13,7 +13,7 @@ The contract ABI is embedded here so no external file is needed at runtime.
 Gas estimate: ~21,000 per anchorBatch call (~$0.001 on Polygon).
 """
 
-from __future__ import annotations
+
 
 import logging
 import os

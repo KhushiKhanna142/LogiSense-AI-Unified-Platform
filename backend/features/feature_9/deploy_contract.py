@@ -15,7 +15,7 @@ On success, prints the deployed address. Update your .env:
 Requirements: pip install web3 py-solc-x python-dotenv
 """
 
-from __future__ import annotations
+
 
 import os
 import sys

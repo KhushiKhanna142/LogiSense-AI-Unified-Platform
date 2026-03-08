@@ -13,7 +13,7 @@ a specific decision by re-walking the proof path and checking it reaches
 the on-chain root — no access to the internal DB required.
 """
 
-from __future__ import annotations
+
 
 import hashlib
 import logging

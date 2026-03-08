@@ -13,7 +13,7 @@ Design principles:
   proving it was taken by the legitimate agent, not injected post-hoc.
 """
 
-from __future__ import annotations
+
 
 import hashlib
 import json

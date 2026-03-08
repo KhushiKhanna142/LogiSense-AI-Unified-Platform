@@ -10,7 +10,7 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent
 ZEN_DIR = BACKEND_DIR / "zen"
 FEAT_DIR = BACKEND_DIR / "features"
 
-for d in [ZEN_DIR, FEAT_DIR]:
+for d in [ZEN_DIR, FEAT_DIR, FEAT_DIR / "feature_8", FEAT_DIR / "feature_9", FEAT_DIR / "feature_10"]:
     if str(d) not in sys.path:
         sys.path.append(str(d))
 
@@ -28,7 +28,6 @@ try:
     from zen.routers import demand, routes, eta
     from feature_8.api.routes import router as f8_router
     from feature_9.api import router as f9_router
-    from feature_10.api.server import app as f10_app
     from unified_graph import build_logisense_graph
     INTEGRATIONS_LOADED = True
 except ImportError as e:
@@ -83,8 +82,6 @@ async def startup():
             print(f"⚠️ F8 Mock init failed: {e}")
         # F9: api.py
         app.include_router(f9_router, prefix="/api/f9/blockchain", tags=["F9"])
-        # F10 is an app
-        app.mount("/api/f10", f10_app)
         
         print("✅ Integrated Routers Mounted.")
 
@@ -148,7 +145,8 @@ async def f8_demo_data():
     return {
         "predictions": app_state.get("f8_demo_predictions", []),
         "features": app_state.get("f8_demo_features", []),
-        "modelKey": "demo_model"
+        "modelKey": "demo_model",
+        "debug_keys": list(app_state.keys())
     }
 
 @app.post('/api/trigger-scan')

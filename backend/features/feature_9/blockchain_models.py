@@ -6,8 +6,6 @@ These are injected into the LangGraph AgentState so every node
 can read/write blockchain fields without coupling to this module.
 """
 
-from __future__ import annotations
-
 import time
 from enum import Enum
 from typing import Any, Dict, List, Optional

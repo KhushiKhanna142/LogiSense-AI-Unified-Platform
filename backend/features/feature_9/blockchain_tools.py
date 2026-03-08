@@ -13,7 +13,7 @@ Integration contract:
     reads the decision record.
 """
 
-from __future__ import annotations
+
 
 import logging
 import os
