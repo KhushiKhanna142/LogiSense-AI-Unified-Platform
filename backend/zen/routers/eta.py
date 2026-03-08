@@ -7,7 +7,7 @@ import time
 import logging
 from datetime import datetime
 from typing import Optional, List
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from zen.services.gemini_service import get_eta_context
@@ -55,12 +55,12 @@ class ActualRecordRequest(BaseModel):
 
 
 @router.post("/predict")
-async def predict_eta(req: ETAPredictionRequest, background_tasks: BackgroundTasks):
+async def predict_eta(req: ETAPredictionRequest, background_tasks: BackgroundTasks, request: Request):
     """
     Primary ETA prediction using XGBoost.
     < 200ms total (XGBoost inference < 5ms, weather fetch async).
     """
-    from main import app_state
+    app_state = getattr(request.app.state, "app_state", {})
     from zen.models.eta.xgboost_service import XGBoostETAService
     from zen.services.weather_service import get_route_weather
 
@@ -119,9 +119,9 @@ async def predict_eta(req: ETAPredictionRequest, background_tasks: BackgroundTas
 
 
 @router.post("/predict/chronos")
-async def predict_chronos(req: ChronosPredictionRequest):
+async def predict_chronos(req: ChronosPredictionRequest, request: Request):
     """Chronos-2 zero-shot lane delay forecast."""
-    from main import app_state
+    app_state = getattr(request.app.state, "app_state", {})
 
     chronos = app_state.get("chronos")
     if not chronos:
@@ -140,9 +140,9 @@ async def predict_chronos(req: ChronosPredictionRequest):
 
 
 @router.post("/predict/bulk")
-async def predict_bulk(requests: list):
+async def predict_bulk(requests: list, request: Request):
     """Bulk prediction — up to 1,000 shipments."""
-    from main import app_state
+    app_state = getattr(request.app.state, "app_state", {})
     from zen.services.weather_service import get_route_weather
     import asyncio
 
@@ -176,9 +176,9 @@ async def predict_bulk(requests: list):
 
 
 @router.post("/intervention")
-async def trigger_intervention(req: InterventionRequest):
+async def trigger_intervention(req: InterventionRequest, request: Request):
     """Actor Agent tool — triggers synchronous ETA re-estimation."""
-    from main import app_state
+    app_state = getattr(request.app.state, "app_state", {})
 
     actor = app_state.get("actor")
     if not actor:
@@ -195,9 +195,9 @@ async def trigger_intervention(req: InterventionRequest):
 
 
 @router.post("/record-actual")
-async def record_actual(req: ActualRecordRequest):
+async def record_actual(req: ActualRecordRequest, request: Request):
     """Learner Agent — record actual delivery time for retraining."""
-    from main import app_state
+    app_state = getattr(request.app.state, "app_state", {})
 
     learner = app_state.get("learner")
     if not learner:
