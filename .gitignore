@@ -1,0 +1,69 @@
+# ── Environment & Secrets ─────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Python ────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+*.whl
+venv/
+.venv/
+env/
+ENV/
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+*.log
+
+# ── Node / Frontend ───────────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+.npm
+*.lock
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Models & Large Data Files ─────────────────────────────────────
+*.pkl
+*.joblib
+*.h5
+*.bin
+*.model
+models/*.pkl
+models/*.joblib
+*.csv
+*.parquet
+*.feather
+data scripts/
+
+# ── MacOS ─────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# ── IDE ───────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Documentation source ──────────────────────────────────────────
+*.docx
+
+# ── Redis dump ────────────────────────────────────────────────────
+dump.rdb
