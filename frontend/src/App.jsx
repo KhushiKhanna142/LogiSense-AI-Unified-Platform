@@ -9,11 +9,15 @@ function App() {
     const [activeTab, setActiveTab] = useState('LOGISENSE');
     const [explainabilityData, setExplainabilityData] = useState(null);
 
-    useEffect(() => {
+    const fetchExplainabilityData = () => {
         fetch('http://localhost:8000/api/explainability/demo_data')
             .then(res => res.json())
             .then(data => setExplainabilityData(data))
             .catch(err => console.error("Explainability Demo Load Error:", err));
+    };
+
+    useEffect(() => {
+        fetchExplainabilityData();
     }, []);
 
     const renderTab = () => {
@@ -49,6 +53,7 @@ function App() {
                             predictions={explainabilityData.predictions}
                             features={explainabilityData.features}
                             modelKey={explainabilityData.modelKey}
+                            onRegenerate={fetchExplainabilityData}
                         />
                     ) : (
                         <div className="text-center py-20 text-gray-400">Loading ML Explanation Models...</div>

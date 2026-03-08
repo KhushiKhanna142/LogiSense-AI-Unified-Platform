@@ -29,7 +29,7 @@ class ExplainRequest(BaseModel):
 
 
 class WaterfallRequest(BaseModel):
-    child_idx: int
+    shipment_idx: int
     predictions: list[dict]
     features: list[dict]
     model_artifact_key: str
@@ -90,6 +90,8 @@ def get_waterfall(req: WaterfallRequest):
         # We don't cache waterfall, generate on fly (it's fast enough for single shipment)
         return {"figure": build_waterfall(engine, req.shipment_idx, req.predictions)}
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 

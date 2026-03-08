@@ -55,7 +55,7 @@ const PLOTLY_CONFIG = {
  * @param {string}  props.modelKey       Key to look up model in backend registry
  * @param {boolean} props.autoLoad       If true, load charts on mount
  */
-export default function ExplainabilityDashboard({ predictions, features, modelKey, autoLoad = true }) {
+export default function ExplainabilityDashboard({ predictions, features, modelKey, autoLoad = true, onRegenerate }) {
   const [charts, setCharts] = useState({ heatmap: null, matrix: null, waterfall: null });
   const [meta, setMeta] = useState({ topFeatures: [], topDriver: "", shipmentsAnalyzed: 0 });
   const [loading, setLoading] = useState(false);
@@ -173,7 +173,14 @@ export default function ExplainabilityDashboard({ predictions, features, modelKe
           )}
         </div>
 
-        <button className="expl-refresh-btn" onClick={loadAllCharts} disabled={loading}>
+        <button className="expl-refresh-btn" onClick={() => {
+          setLoading(true);
+          if (onRegenerate) {
+            onRegenerate();
+          } else {
+            loadAllCharts();
+          }
+        }} disabled={loading}>
           {loading ? <Spinner /> : "↻ Regenerate"}
         </button>
       </div>
@@ -216,7 +223,9 @@ export default function ExplainabilityDashboard({ predictions, features, modelKe
               >
                 {CHART_DESCRIPTIONS[tab].icon} {CHART_DESCRIPTIONS[tab].title}
                 {tab === "waterfall" && selectedShipment !== null && (
-                  <span className="expl-tab-badge">Shipment {selectedShipment}</span>
+                  <span className="expl-tab-badge">
+                    {predictions?.[selectedShipment]?.shipment_id || `Shipment ${selectedShipment}`}
+                  </span>
                 )}
               </button>
             ))}
