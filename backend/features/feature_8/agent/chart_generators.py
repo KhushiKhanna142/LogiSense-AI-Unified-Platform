@@ -51,12 +51,12 @@ def build_heatmap(engine: SHAPEngine, predictions: list[dict]) -> dict:
     top_features = engine.get_top_features(k=10)
     shap_df = engine.get_shap_df()[top_features]
 
-    # Sort children by risk score ascending
+    # Sort shipments by risk score ascending
     risk_scores = [p["risk_score"] for p in predictions]
     sort_idx = np.argsort(risk_scores)
-    shap_matrix = shap_df.iloc[sort_idx][top_features].T.values  # shape: (features, children)
+    shap_matrix = shap_df.iloc[sort_idx][top_features].T.values  # shape: (features, shipments)
 
-    child_ids = [str(predictions[i].get("child_id", i)) for i in sort_idx]
+    shipment_ids = [str(predictions[i].get("shipment_id", i)) for i in sort_idx]
     sorted_scores = [risk_scores[i] for i in sort_idx]
 
     # Risk score bar above heatmap
@@ -71,10 +71,10 @@ def build_heatmap(engine: SHAPEngine, predictions: list[dict]) -> dict:
     fig.add_trace(
         go.Heatmap(
             z=[sorted_scores],
-            x=child_ids,
+            x=shipment_ids,
             colorscale=[[0, "#1a6b3c"], [0.5, "#f59e0b"], [1, "#7f1d1d"]],
             showscale=False,
-            hovertemplate="Child %{x}<br>Risk Score: %{z:.1f}<extra></extra>",
+            hovertemplate="Shipment %{x}<br>Risk Score: %{z:.1f}<extra></extra>",
         ),
         row=1, col=1,
     )
@@ -88,13 +88,13 @@ def build_heatmap(engine: SHAPEngine, predictions: list[dict]) -> dict:
     hover_text = []
     for fi, feat in enumerate(top_features):
         row_text = []
-        for ci, child in enumerate(child_ids):
+        for ci, shipment in enumerate(shipment_ids):
             sv = shap_matrix[fi, ci]
             fv = engine.X_df.iloc[sort_idx[ci]][feat]
             direction = "▲ increases risk" if sv > 0 else "▼ reduces risk"
             row_text.append(
                 f"<b>{feat}</b><br>"
-                f"Child: {child}<br>"
+                f"Shipment: {shipment}<br>"
                 f"Feature value: {fv:.2f}<br>"
                 f"SHAP: {sv:+.3f}<br>"
                 f"{direction}"
@@ -104,7 +104,7 @@ def build_heatmap(engine: SHAPEngine, predictions: list[dict]) -> dict:
     fig.add_trace(
         go.Heatmap(
             z=normalized,
-            x=child_ids,
+            x=shipment_ids,
             y=top_features,
             colorscale=HEATMAP_COLORSCALE,
             zmid=0,
@@ -135,7 +135,7 @@ def build_heatmap(engine: SHAPEngine, predictions: list[dict]) -> dict:
         height=480,
         xaxis=dict(showticklabels=False, showgrid=False),
         xaxis2=dict(
-            title="Children (sorted: low → high risk)",
+            title="Shipments (sorted: low → high risk)",
             color="#8b949e",
             showgrid=False,
             tickfont=dict(size=8),
@@ -150,39 +150,36 @@ def build_heatmap(engine: SHAPEngine, predictions: list[dict]) -> dict:
 def build_risk_matrix(engine: SHAPEngine, X_df: pd.DataFrame, predictions: list[dict]) -> dict:
     """
     Risk Stratification Matrix.
-    Rows = Days Overdue buckets
-    Cols = Vaccines Missed count
+    Rows = ETA Delay minutes
+    Cols = Carrier Reliability buckets
     Cell = Average predicted risk score for that segment
-    Dynamically uses whatever 'days_overdue' and 'vaccines_missed' columns exist.
     """
     df = X_df.copy()
     df["risk_score"] = [p["risk_score"] for p in predictions]
 
-    # Find days-overdue and vaccines-missed columns dynamically
-    days_col = _find_column(df, ["days_overdue", "days overdue", "overdue_days", "overdue"])
-    vacc_col = _find_column(df, ["vaccines_missed", "vaccines missed", "missed_vaccines", "vaccine_missed"])
+    # Find columns dynamically
+    days_col = _find_column(df, ["eta_delay_minutes", "eta_delay", "delay"])
+    vacc_col = _find_column(df, ["carrier_reliability", "reliability", "carrier score"])
 
     if days_col is None or vacc_col is None:
         # Fallback: use top 2 most important features
         top2 = engine.get_top_features(k=2)
         days_col, vacc_col = top2[0], top2[1]
 
-    # Days overdue buckets
-    day_bins = [0, 7, 30, 60, 90, float("inf")]
-    day_labels = ["0–7 days", "8–30 days", "31–60 days", "61–90 days", "90+ days"]
+    # ETA delay buckets
+    day_bins = [0, 15, 30, 60, 120, float("inf")]
+    day_labels = ["0–15 min", "16–30 min", "31–60 min", "61–120 min", "120+ min"]
     df["days_bucket"] = pd.cut(df[days_col], bins=day_bins, labels=day_labels, right=True)
 
-    # Vaccines missed buckets (0,1,2,3,4+)
-    vacc_max = int(df[vacc_col].max())
-    vacc_bins = list(range(0, min(vacc_max + 2, 6))) + ([float("inf")] if vacc_max >= 4 else [])
-    vacc_labels = [str(i) for i in range(min(vacc_max + 1, 4))] + (["4+"] if vacc_max >= 4 else [])
-    df["vacc_bucket"] = pd.cut(df[vacc_col], bins=[-1] + list(range(1, min(vacc_max + 2, 5))) + ([float("inf")] if vacc_max >= 4 else [vacc_max + 1]),
-                               labels=vacc_labels, right=True)
+    # Carrier reliability buckets (50-100)
+    vacc_bins = [0, 60, 75, 90, 100]
+    vacc_labels = ["<60", "60-75", "76-90", "90-100"]
+    df["vacc_bucket"] = pd.cut(df[vacc_col], bins=vacc_bins, labels=vacc_labels, right=True)
 
     pivot = df.groupby(["days_bucket", "vacc_bucket"], observed=True)["risk_score"].mean().unstack(fill_value=np.nan)
 
     z_values = pivot.values
-    x_labels = [f"{v} missed" for v in pivot.columns.tolist()]
+    x_labels = [f"Rel: {v}" for v in pivot.columns.tolist()]
     y_labels = pivot.index.tolist()
 
     # Text annotations inside cells
@@ -261,7 +258,7 @@ def build_risk_matrix(engine: SHAPEngine, X_df: pd.DataFrame, predictions: list[
         ),
         annotations=[
             dict(
-                text=">70 = immediate escalation to ASHA supervisor",
+                text=">70 = High risk of Cascade Propagation",
                 x=0.5, y=-0.12,
                 xref="paper", yref="paper",
                 showarrow=False,
@@ -273,14 +270,14 @@ def build_risk_matrix(engine: SHAPEngine, X_df: pd.DataFrame, predictions: list[
     return fig.to_dict()
 
 
-def build_waterfall(engine: SHAPEngine, child_idx: int, predictions: list[dict]) -> dict:
+def build_waterfall(engine: SHAPEngine, shipment_idx: int, predictions: list[dict]) -> dict:
     """
-    SHAP Waterfall Chart for a single child.
+    SHAP Waterfall Chart for a single shipment.
     Shows how each feature pushed the prediction up or down from the baseline.
     """
-    data = engine.get_waterfall_data(child_idx)
-    child_id = predictions[child_idx].get("child_id", child_idx)
-    final_score = predictions[child_idx]["risk_score"]
+    data = engine.get_waterfall_data(shipment_idx)
+    shipment_id = predictions[shipment_idx].get("shipment_id", shipment_idx)
+    final_score = predictions[shipment_idx]["risk_score"]
 
     features = data["features"]
     shap_vals = data["shap_values"]
@@ -347,7 +344,7 @@ def build_waterfall(engine: SHAPEngine, child_idx: int, predictions: list[dict])
 
     fig.update_layout(
         title=dict(
-            text=f"SHAP Waterfall — Child {child_id}<br>"
+            text=f"SHAP Waterfall — Shipment {shipment_id}<br>"
                  f"<sup style='color:#8b949e'>How each feature built up the risk score from baseline {base:.1f} → {final_score:.1f}</sup>",
             font=dict(size=15, color="#e6edf3"),
             x=0.02,

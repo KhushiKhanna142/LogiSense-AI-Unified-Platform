@@ -75,14 +75,22 @@ async def get_matrix(req: ExplainRequest):
 
 
 @router.post("/waterfall")
-async def get_waterfall(req: WaterfallRequest):
-    """Returns Plotly JSON for SHAP Waterfall of a specific child."""
-    if req.child_idx < 0 or req.child_idx >= len(req.predictions):
-        raise HTTPException(status_code=400, detail="child_idx out of range")
-    model = get_model(req.model_artifact_key)
-    X_df = pd.DataFrame(req.features)
-    engine = SHAPEngine(model=model, X_df=X_df)
-    return {"figure": build_waterfall(engine, req.child_idx, req.predictions)}
+def get_waterfall(req: WaterfallRequest):
+    """Generates the SHAP Waterfall for a specific shipment."""
+    try:
+        model = get_model(req.model_artifact_key)
+        X_df = pd.DataFrame(req.features)
+        
+        engine = SHAPEngine(model, X_df)
+        engine.compute_shap()
+        
+        if req.shipment_idx < 0 or req.shipment_idx >= len(req.predictions):
+            raise HTTPException(status_code=400, detail="shipment_idx out of range")
+        
+        # We don't cache waterfall, generate on fly (it's fast enough for single shipment)
+        return {"figure": build_waterfall(engine, req.shipment_idx, req.predictions)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/all")
@@ -102,7 +110,7 @@ async def get_all_charts(req: ExplainRequest):
         "matrix": build_risk_matrix(engine, X_df, req.predictions),
         "waterfall": build_waterfall(engine, highest_risk_idx, req.predictions),
         "top_features": engine.get_top_features(k=8),
-        "children_analyzed": len(req.predictions),
+        "shipments_analyzed": len(req.predictions),
         "top_driver": engine.get_top_features(k=1)[0],
     }
 

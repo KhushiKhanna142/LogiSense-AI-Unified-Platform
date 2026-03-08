@@ -73,7 +73,7 @@ async def startup():
         try:
             from feature_8.mocks.mock_ml_node import run_mock_ml_prediction
             from feature_8.api.routes import register_model
-            state = run_mock_ml_prediction(n_children=60)
+            state = run_mock_ml_prediction(n_shipments=60)
             register_model("demo_model", state["model"])
             app_state["f8_demo_predictions"] = state["predictions"]
             app_state["f8_demo_features"] = state["X_df"].to_dict(orient="records")

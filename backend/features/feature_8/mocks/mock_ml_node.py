@@ -26,22 +26,20 @@ from xgboost import XGBClassifier
 from typing import Any
 
 
-def generate_synthetic_children(n: int = 60, seed: int = 42) -> pd.DataFrame:
+def generate_synthetic_shipments(n: int = 60, seed: int = 42) -> pd.DataFrame:
     """
-    Generates a synthetic dataset matching the expected immunization schema.
-    Replace this with real data loading in production.
-    Feature names here MUST match what the actual data pipeline produces.
+    Generates a synthetic dataset matching the expected Logistics feature schema.
     """
     rng = np.random.default_rng(seed)
     return pd.DataFrame({
-        "days_overdue":        rng.integers(0, 120, n),
-        "vaccines_missed":     rng.integers(0, 5, n),
-        "district_outbreak":   rng.integers(0, 2, n),
-        "reminders_ignored":   rng.integers(0, 4, n),
-        "high_risk_state":     rng.integers(0, 2, n),
-        "child_age_months":    rng.integers(1, 60, n),
-        "sibling_history":     rng.integers(0, 2, n),
-        "gender_male":         rng.integers(0, 2, n),
+        "eta_delay_minutes":   rng.integers(0, 120, n),
+        "carrier_reliability": rng.integers(50, 100, n),
+        "weather_risk_index":  rng.integers(0, 10, n),
+        "route_congestion":    rng.integers(0, 100, n),
+        "border_delay":        rng.integers(0, 2, n),
+        "fragile_cargo":       rng.integers(0, 2, n),
+        "priority_level":      rng.integers(1, 5, n),
+        "historical_loss":     rng.integers(0, 3, n),
     })
 
 
@@ -59,19 +57,18 @@ def train_mock_model(X: pd.DataFrame, y: pd.Series) -> Any:
     return model
 
 
-def run_mock_ml_prediction(n_children: int = 60) -> dict:
+def run_mock_ml_prediction(n_shipments: int = 60) -> dict:
     """
     Returns a GraphState-compatible dict as if Feature 5 had run.
-    Use this to test Feature 8 independently.
     """
-    X = generate_synthetic_children(n_children)
-    y = (X["days_overdue"] > 45).astype(int)
+    X = generate_synthetic_shipments(n_shipments)
+    y = (X["eta_delay_minutes"] > 45).astype(int)
     model = train_mock_model(X, y)
 
     probs = model.predict_proba(X)[:, 1]
     predictions = [
         {
-            "child_id": f"C{i:03d}",
+            "shipment_id": f"SHP{i:03d}",
             "risk_score": float(round(p * 100, 2)),
             "risk_label": _risk_label(p * 100),
         }

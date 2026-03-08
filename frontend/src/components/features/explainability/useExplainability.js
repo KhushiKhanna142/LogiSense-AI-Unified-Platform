@@ -7,7 +7,7 @@
  * Usage:
  *   import { useExplainability } from '../feature_8/frontend/useExplainability';
  *
- *   const { charts, meta, loading, error, loadCharts, loadWaterfallForChild } =
+ *   const { charts, meta, loading, error, loadCharts, loadWaterfallForShipment } =
  *     useExplainability({ predictions, features, modelKey });
  */
 
@@ -17,7 +17,7 @@ const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 /**
  * @param {object} config
- * @param {Array}  config.predictions   [{child_id, risk_score}]
+ * @param {Array}  config.predictions   [{shipment_id, risk_score}]
  * @param {Array}  config.features      Feature rows as array of plain objects
  * @param {string} config.modelKey      Model registry key from ML prediction agent
  */
@@ -30,7 +30,7 @@ export function useExplainability({ predictions, features, modelKey }) {
   const [meta, setMeta] = useState({
     topFeatures: [],
     topDriver: "",
-    childrenAnalyzed: 0,
+    shipmentsAnalyzed: 0,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -71,7 +71,7 @@ export function useExplainability({ predictions, features, modelKey }) {
       setMeta({
         topFeatures: data.top_features || [],
         topDriver: data.top_driver || "",
-        childrenAnalyzed: data.children_analyzed || 0,
+        shipmentsAnalyzed: data.shipments_analyzed || 0,
       });
     } catch (err) {
       setError(err.message);
@@ -81,8 +81,8 @@ export function useExplainability({ predictions, features, modelKey }) {
     }
   }, [predictions, features, modelKey]);
 
-  const loadWaterfallForChild = useCallback(
-    async (childIdx) => {
+  const loadWaterfallForShipment = useCallback(
+    async (shipmentIdx) => {
       if (!predictions?.length || !features?.length || !modelKey) return;
       setLoading(true);
       setError(null);
@@ -91,7 +91,7 @@ export function useExplainability({ predictions, features, modelKey }) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            child_idx: childIdx,
+            shipment_idx: shipmentIdx,
             predictions,
             features,
             model_artifact_key: modelKey,
@@ -111,9 +111,9 @@ export function useExplainability({ predictions, features, modelKey }) {
 
   const reset = useCallback(() => {
     setCharts({ heatmap: null, matrix: null, waterfall: null });
-    setMeta({ topFeatures: [], topDriver: "", childrenAnalyzed: 0 });
+    setMeta({ topFeatures: [], topDriver: "", shipmentsAnalyzed: 0 });
     setError(null);
   }, []);
 
-  return { charts, meta, loading, error, loadCharts, loadWaterfallForChild, reset };
+  return { charts, meta, loading, error, loadCharts, loadWaterfallForShipment, reset };
 }

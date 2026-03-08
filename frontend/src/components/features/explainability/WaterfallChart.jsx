@@ -2,14 +2,14 @@
  * WaterfallChart.jsx
  * Feature 8 — SHAP Waterfall Chart Component
  *
- * Shows how each feature pushed a single child's risk score
+ * Shows how each feature pushed a single shipment's risk score
  * up or down from the model baseline.
  *
  * Props:
- *   predictions     [{child_id, risk_score}]   — from ML prediction agent
- *   features        [{days_overdue, ...}]       — feature rows, one per child
+ *   predictions     [{shipment_id, risk_score}]   — from ML prediction agent
+ *   features        [{days_overdue, ...}]       — feature rows, one per shipment
  *   modelKey        string                      — model registry key from backend
- *   childIdx        number                      — which child to explain (default = highest risk)
+ *   shipmentIdx        number                      — which shipment to explain (default = highest risk)
  *   height          number                      — chart height in px (default 400)
  */
 
@@ -30,16 +30,16 @@ export default function WaterfallChart({
   predictions = [],
   features = [],
   modelKey = "",
-  childIdx = null,   // null = auto-select highest risk child
+  shipmentIdx = null,   // null = auto-select highest risk shipment
   height = 400,
 }) {
   const [figure, setFigure] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [activeChild, setActiveChild] = useState(childIdx);
+  const [activeShipment, setActiveShipment] = useState(shipmentIdx);
 
-  // Auto-select highest risk child when childIdx is not provided
-  const resolvedIdx = activeChild ?? (
+  // Auto-select highest risk shipment when shipmentIdx is not provided
+  const resolvedIdx = activeShipment ?? (
     predictions.length
       ? predictions.indexOf(predictions.reduce((a, b) => a.risk_score > b.risk_score ? a : b))
       : 0
@@ -54,7 +54,7 @@ export default function WaterfallChart({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          child_idx: idx,
+          shipment_idx: idx,
           predictions,
           features,
           model_artifact_key: modelKey,
@@ -77,18 +77,18 @@ export default function WaterfallChart({
     fetchWaterfall(resolvedIdx);
   }, [resolvedIdx, fetchWaterfall]);
 
-  // Allow parent to change childIdx dynamically
+  // Allow parent to change shipmentIdx dynamically
   useEffect(() => {
-    if (childIdx !== null && childIdx !== activeChild) {
-      setActiveChild(childIdx);
+    if (shipmentIdx !== null && shipmentIdx !== activeShipment) {
+      setActiveShipment(shipmentIdx);
     }
-  }, [childIdx]); // eslint-disable-line
+  }, [shipmentIdx]); // eslint-disable-line
 
-  const currentChild = predictions[resolvedIdx];
-  const riskScore = currentChild?.risk_score ?? 0;
+  const currentShipment = predictions[resolvedIdx];
+  const riskScore = currentShipment?.risk_score ?? 0;
   const riskColor = riskScore >= 70 ? "#ef4444" : riskScore >= 50 ? "#f59e0b" : "#4caf50";
 
-  if (loading) return <LoadingBar message={`Explaining child ${resolvedIdx}…`} />;
+  if (loading) return <LoadingBar message={`Explaining shipment ${resolvedIdx}…`} />;
   if (error)   return <ErrorBox message={error} onRetry={() => fetchWaterfall(resolvedIdx)} />;
   if (!figure) return <EmptyBox message="Run ML prediction to generate waterfall." />;
 
@@ -111,18 +111,18 @@ export default function WaterfallChart({
         </div>
       </div>
 
-      {/* Child selector */}
+      {/* Shipment selector */}
       {predictions.length > 1 && (
         <div style={styles.selectorBar}>
-          <span style={styles.selectorLabel}>View child:</span>
+          <span style={styles.selectorLabel}>View shipment:</span>
           <select
             style={styles.selector}
             value={resolvedIdx}
-            onChange={(e) => setActiveChild(Number(e.target.value))}
+            onChange={(e) => setActiveShipment(Number(e.target.value))}
           >
             {predictions.map((p, i) => (
               <option key={i} value={i}>
-                {p.child_id} — score {p.risk_score.toFixed(1)}
+                {p.shipment_id} — score {p.risk_score.toFixed(1)}
               </option>
             ))}
           </select>

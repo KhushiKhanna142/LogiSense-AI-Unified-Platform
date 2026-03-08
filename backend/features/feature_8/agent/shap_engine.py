@@ -73,10 +73,10 @@ class SHAPEngine:
             return float(ev[1])
         return float(ev)
 
-    def get_waterfall_data(self, child_idx: int) -> dict:
-        """Extract data for a single-child waterfall chart."""
-        shap_row = self.shap_values[child_idx]
-        feature_row = self.X_df.iloc[child_idx]
+    def get_waterfall_data(self, shipment_idx: int) -> dict:
+        """Extract data for a single-shipment waterfall chart."""
+        shap_row = self.shap_values[shipment_idx]
+        feature_row = self.X_df.iloc[shipment_idx]
         sorted_idx = np.argsort(np.abs(shap_row))[::-1]
 
         return {
@@ -84,5 +84,5 @@ class SHAPEngine:
             "features": [self.feature_names[i] for i in sorted_idx],
             "shap_values": [float(shap_row[i]) for i in sorted_idx],
             "feature_values": [float(feature_row.iloc[i]) for i in sorted_idx],
-            "child_idx": child_idx,
+            "shipment_idx": shipment_idx,
         }

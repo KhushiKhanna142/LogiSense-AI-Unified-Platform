@@ -21,19 +21,19 @@ const CHART_DESCRIPTIONS = {
   heatmap: {
     title: "SHAP Feature Impact Heatmap",
     subtitle:
-      "Each column = one child sorted low→high risk. Each row = one feature. Red = increases risk. Blue = reduces risk.",
+      "Each column = one shipment sorted low→high risk. Each row = one feature. Red = increases risk. Blue = reduces risk.",
     icon: "🔥",
   },
   matrix: {
     title: "Risk Stratification Matrix",
     subtitle:
-      "Average predicted risk score for every Days Overdue × Vaccines Missed segment. Use to triage which patient groups need immediate attention.",
+      "Average predicted risk score for every ETA Delay × Carrier Reliability segment. Use to triage which shipment groups need immediate attention.",
     icon: "🧮",
   },
   waterfall: {
     title: "SHAP Waterfall — Individual Explanation",
     subtitle:
-      "How each feature pushed this child's risk score up or down from the model baseline. Click any child in the heatmap to see their waterfall.",
+      "How each feature pushed this shipment's risk score up or down from the model baseline. Click any shipment in the heatmap to see their waterfall.",
     icon: "📊",
   },
 };
@@ -50,18 +50,18 @@ const PLOTLY_CONFIG = {
 
 /**
  * @param {object}  props
- * @param {Array}   props.predictions    [{child_id, risk_score, ...}]
+ * @param {Array}   props.predictions    [{shipment_id, risk_score, ...}]
  * @param {Array}   props.features       Feature rows as array of objects
  * @param {string}  props.modelKey       Key to look up model in backend registry
  * @param {boolean} props.autoLoad       If true, load charts on mount
  */
 export default function ExplainabilityDashboard({ predictions, features, modelKey, autoLoad = true }) {
   const [charts, setCharts] = useState({ heatmap: null, matrix: null, waterfall: null });
-  const [meta, setMeta] = useState({ topFeatures: [], topDriver: "", childrenAnalyzed: 0 });
+  const [meta, setMeta] = useState({ topFeatures: [], topDriver: "", shipmentsAnalyzed: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("heatmap");
-  const [selectedChild, setSelectedChild] = useState(null);
+  const [selectedShipment, setSelectedShipment] = useState(null);
 
   // ── Fetch all charts ──────────────────────────────────────────────────────
 
@@ -92,7 +92,7 @@ export default function ExplainabilityDashboard({ predictions, features, modelKe
       setMeta({
         topFeatures: data.top_features || [],
         topDriver: data.top_driver || "",
-        childrenAnalyzed: data.children_analyzed || 0,
+        shipmentsAnalyzed: data.shipments_analyzed || 0,
       });
     } catch (err) {
       setError(err.message);
@@ -105,11 +105,11 @@ export default function ExplainabilityDashboard({ predictions, features, modelKe
     if (autoLoad) loadAllCharts();
   }, [autoLoad, loadAllCharts]);
 
-  // ── Fetch waterfall for specific child ────────────────────────────────────
+  // ── Fetch waterfall for specific shipment ────────────────────────────────────
 
-  const loadWaterfallForChild = useCallback(
-    async (childIdx) => {
-      setSelectedChild(childIdx);
+  const loadWaterfallForShipment = useCallback(
+    async (shipmentIdx) => {
+      setSelectedShipment(shipmentIdx);
       setActiveTab("waterfall");
 
       try {
@@ -117,7 +117,7 @@ export default function ExplainabilityDashboard({ predictions, features, modelKe
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            child_idx: childIdx,
+            shipment_idx: shipmentIdx,
             predictions,
             features,
             model_artifact_key: modelKey,
@@ -132,17 +132,17 @@ export default function ExplainabilityDashboard({ predictions, features, modelKe
     [predictions, features, modelKey]
   );
 
-  // ── Heatmap click handler — drill into a child ───────────────────────────
+  // ── Heatmap click handler — drill into a shipment ───────────────────────────
 
   const handleHeatmapClick = useCallback(
     (event) => {
       const pointIndex = event.points?.[0]?.pointIndex;
       if (pointIndex !== undefined) {
-        const childIdx = Array.isArray(pointIndex) ? pointIndex[1] : pointIndex;
-        loadWaterfallForChild(childIdx);
+        const shipmentIdx = Array.isArray(pointIndex) ? pointIndex[1] : pointIndex;
+        loadWaterfallForShipment(shipmentIdx);
       }
     },
-    [loadWaterfallForChild]
+    [loadWaterfallForShipment]
   );
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -159,14 +159,14 @@ export default function ExplainabilityDashboard({ predictions, features, modelKe
             ML Explainability
           </h2>
           <p className="expl-subtitle">
-            Why did the model flag these children? Every prediction explained.
+            Why did the model flag these shipments? Every prediction explained.
           </p>
         </div>
 
         <div className="expl-meta-badges">
-          {meta.childrenAnalyzed > 0 && (
+          {meta.shipmentsAnalyzed > 0 && (
             <>
-              <MetaBadge label="Children Analyzed" value={meta.childrenAnalyzed} />
+              <MetaBadge label="Shipments Analyzed" value={meta.shipmentsAnalyzed} />
               <MetaBadge label="Features Used" value={meta.topFeatures.length} />
               {meta.topDriver && <MetaBadge label="Top Driver" value={meta.topDriver} highlight />}
             </>
@@ -215,8 +215,8 @@ export default function ExplainabilityDashboard({ predictions, features, modelKe
                 onClick={() => setActiveTab(tab)}
               >
                 {CHART_DESCRIPTIONS[tab].icon} {CHART_DESCRIPTIONS[tab].title}
-                {tab === "waterfall" && selectedChild !== null && (
-                  <span className="expl-tab-badge">Child {selectedChild}</span>
+                {tab === "waterfall" && selectedShipment !== null && (
+                  <span className="expl-tab-badge">Shipment {selectedShipment}</span>
                 )}
               </button>
             ))}
@@ -231,7 +231,7 @@ export default function ExplainabilityDashboard({ predictions, features, modelKe
               <PlotlyChart
                 figure={charts.heatmap}
                 onClick={handleHeatmapClick}
-                hint="💡 Click any column to drill into that child's explanation"
+                hint="💡 Click any column to drill into that shipment's explanation"
               />
             )}
             {activeTab === "matrix" && charts.matrix && (

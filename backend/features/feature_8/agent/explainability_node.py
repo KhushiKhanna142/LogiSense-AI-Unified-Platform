@@ -56,10 +56,10 @@ def explainability_node(state: GraphState) -> GraphState:
         matrix_json = build_risk_matrix(engine, X_df, predictions)
         logger.info("[Feature 8] Risk matrix built.")
 
-        # Waterfall: default to highest-risk child for display
+        # 2. Build single Waterfall for the highest risk shipment
         highest_risk_idx = max(range(len(predictions)), key=lambda i: predictions[i]["risk_score"])
         waterfall_json = build_waterfall(engine, highest_risk_idx, predictions)
-        logger.info(f"[Feature 8] Waterfall built for child_idx={highest_risk_idx}.")
+        logger.info(f"[Feature 8] Waterfall built for shipment_idx={highest_risk_idx}.")
 
         # ── 4. Write back to shared state ────────────────────────────────────
         return {
@@ -78,10 +78,10 @@ def explainability_node(state: GraphState) -> GraphState:
         return {**state, "error": f"[Feature 8] {str(exc)}", "current_node": "explainability"}
 
 
-def explainability_node_for_child(state: GraphState, child_idx: int) -> GraphState:
+def explainability_node_for_shipment(state: GraphState, shipment_idx: int) -> GraphState:
     """
-    Variant: regenerate waterfall for a SPECIFIC child on demand.
-    Call this when a judge/user clicks on a specific child in the heatmap.
+    Optional sub-graph node: builds just the waterfall chart for a specific shipment.
+    Useful if a UI user clicks on a single shipment in the heatmap and requests a deep dive.
     """
     model = state.get("model")
     X_df = state.get("X_df")
@@ -92,7 +92,7 @@ def explainability_node_for_child(state: GraphState, child_idx: int) -> GraphSta
 
     try:
         engine = SHAPEngine(model=model, X_df=X_df)
-        waterfall_json = build_waterfall(engine, child_idx, predictions)
+        waterfall_json = build_waterfall(engine, shipment_idx, predictions)
         return {**state, "shap_waterfall_json": waterfall_json, "error": None}
     except Exception as exc:
         return {**state, "error": f"[Feature 8] Waterfall regen failed: {str(exc)}"}

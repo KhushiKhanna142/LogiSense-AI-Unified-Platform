@@ -3,11 +3,11 @@
  * Feature 8 — Risk Stratification Matrix Component
  *
  * Standalone component. Shows average predicted risk score
- * for every Days Overdue × Vaccines Missed segment.
+ * for every ETA Delay × Carrier Reliability segment.
  *
  * Props:
- *   predictions     [{child_id, risk_score}]   — from ML prediction agent
- *   features        [{days_overdue, ...}]       — feature rows, one per child
+ *   predictions     [{shipment_id, risk_score}]   — from ML prediction agent
+ *   features        [{days_overdue, ...}]       — feature rows, one per shipment
  *   modelKey        string                      — model registry key from backend
  *   height          number                      — chart height in px (default 400)
  */
@@ -74,7 +74,7 @@ export default function RiskMatrix({
     <div style={styles.wrapper}>
       <ChartHeader
         title="Risk Stratification Matrix"
-        subtitle="Average predicted risk score (0–100) per Days Overdue × Vaccines Missed segment. Hover any cell for details."
+        subtitle="Average predicted risk score (0–100) per ETA Delay × Carrier Reliability segment. Hover any cell for details."
         onRefresh={fetchMatrix}
       />
       <div style={styles.legend}>

@@ -5,11 +5,11 @@
  * Standalone component. Can be used independently or via ExplainabilityDashboard.
  *
  * Props:
- *   predictions     [{child_id, risk_score}]   — from ML prediction agent
- *   features        [{days_overdue, ...}]       — feature rows, one per child
+ *   predictions     [{shipment_id, risk_score}]   — from ML prediction agent
+ *   features        [{days_overdue, ...}]       — feature rows, one per shipment
  *   modelKey        string                      — model registry key from backend
  *   height          number                      — chart height in px (default 480)
- *   onChildClick    function(childIdx)          — called when a column is clicked
+ *   onShipmentClick    function(shipmentIdx)          — called when a column is clicked
  */
 
 import React, { useEffect, useState, useCallback } from "react";
@@ -30,7 +30,7 @@ export default function SHAPHeatmap({
   features = [],
   modelKey = "",
   height = 480,
-  onChildClick = null,
+  onShipmentClick = null,
 }) {
   const [figure, setFigure] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -69,17 +69,17 @@ export default function SHAPHeatmap({
 
   const handleClick = useCallback(
     (event) => {
-      if (!onChildClick) return;
+      if (!onShipmentClick) return;
       const point = event.points?.[0];
       if (point) {
         const idx = Array.isArray(point.pointIndex) ? point.pointIndex[1] : point.pointIndex;
-        onChildClick(idx);
+        onShipmentClick(idx);
       }
     },
-    [onChildClick]
+    [onShipmentClick]
   );
 
-  if (loading) return <LoadingBar message={`Computing SHAP heatmap for ${predictions.length} children…`} />;
+  if (loading) return <LoadingBar message={`Computing SHAP heatmap for ${predictions.length} shipments…`} />;
   if (error)   return <ErrorBox message={error} onRetry={fetchHeatmap} />;
   if (!figure) return <EmptyBox message="Run ML prediction to generate heatmap." />;
 
@@ -87,11 +87,11 @@ export default function SHAPHeatmap({
     <div style={styles.wrapper}>
       <ChartHeader
         title="SHAP Feature Impact Heatmap"
-        subtitle="Each column = one child (low → high risk). Each row = one feature. Red = increases risk · Blue = reduces risk."
+        subtitle="Each column = one shipment (low → high risk). Each row = one feature. Red = increases risk · Blue = reduces risk."
         onRefresh={fetchHeatmap}
       />
       <div style={styles.hint}>
-        {onChildClick ? "💡 Click any column to see that child's detailed waterfall explanation" : ""}
+        {onShipmentClick ? "💡 Click any column to see that shipment's detailed waterfall explanation" : ""}
       </div>
       <Plot
         data={figure.data}

@@ -14,10 +14,10 @@
  *     modelKey={modelKey}
  *   />
  *
- *   // In Feature 9 (report page): show waterfall for a specific child
+ *   // In Feature 9 (report page): show waterfall for a specific shipment
  *   <ExplainabilityWidget
  *     chartType="waterfall"
- *     childIdx={3}
+ *     shipmentIdx={3}
  *     predictions={predictions}
  *     features={features}
  *     modelKey={modelKey}
@@ -36,7 +36,7 @@ const PLOTLY_CONFIG = {
 
 /**
  * @param {"heatmap"|"matrix"|"waterfall"} chartType
- * @param {number}  [childIdx]    Only used when chartType="waterfall"
+ * @param {number}  [shipmentIdx]    Only used when chartType="waterfall"
  * @param {number}  [height=320]
  * @param {Array}   predictions
  * @param {Array}   features
@@ -44,22 +44,22 @@ const PLOTLY_CONFIG = {
  */
 export default function ExplainabilityWidget({
   chartType = "matrix",
-  childIdx = 0,
+  shipmentIdx = 0,
   height = 320,
   predictions,
   features,
   modelKey,
 }) {
-  const { charts, loading, error, loadCharts, loadWaterfallForChild } =
+  const { charts, loading, error, loadCharts, loadWaterfallForShipment } =
     useExplainability({ predictions, features, modelKey });
 
   useEffect(() => {
     if (chartType === "waterfall") {
-      loadWaterfallForChild(childIdx);
+      loadWaterfallForShipment(shipmentIdx);
     } else {
       loadCharts();
     }
-  }, [chartType, childIdx]); // eslint-disable-line
+  }, [chartType, shipmentIdx]); // eslint-disable-line
 
   const figure = charts[chartType];
 
