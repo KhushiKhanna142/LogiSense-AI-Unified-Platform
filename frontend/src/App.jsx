@@ -4,6 +4,7 @@ import CascadeTree from './components/CascadeTree'
 import SwapNotification from './components/SwapNotification'
 import WarehouseHeatmap from './components/WarehouseHeatmap'
 import ExplainabilityDashboard from './components/features/explainability/ExplainabilityDashboard'
+import ZenPlatform from './components/zen/ZenPlatform'
 
 function App() {
     const [activeTab, setActiveTab] = useState('LOGISENSE');
@@ -63,8 +64,7 @@ function App() {
         } else if (activeTab === 'ZEN') {
             return (
                 <div className="w-full max-w-6xl h-[800px] bg-white rounded-xl overflow-hidden shadow-2xl border border-gray-700">
-                    {/* Embedded Next.js Zen Platform */}
-                    <iframe src="http://localhost:3000" className="w-full h-full border-none" title="Zen Platform" />
+                    <ZenPlatform />
                 </div>
             );
         }
